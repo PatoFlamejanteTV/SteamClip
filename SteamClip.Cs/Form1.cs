@@ -313,13 +313,16 @@ namespace SteamClip
                 return path;
             }
 
+            var fileNameWithoutExt = Path.GetFileNameWithoutExtension(filename);
+            var extension = Path.GetExtension(filename);
             var i = 1;
-            var new_path = Path.Combine(directory, $"{Path.GetFileNameWithoutExtension(filename)}_{i}{Path.GetExtension(filename)}");
-            while (File.Exists(new_path))
+            string new_path;
+            do
             {
+                new_path = Path.Combine(directory, $"{fileNameWithoutExt}_{i}{extension}");
                 i++;
-                new_path = Path.Combine(directory, $"{Path.GetFileNameWithoutExtension(filename)}_{i}{Path.GetExtension(filename)}");
-            }
+            } while (File.Exists(new_path));
+
             return new_path;
         }
 
