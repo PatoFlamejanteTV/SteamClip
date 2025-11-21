@@ -26,9 +26,9 @@ namespace SteamClip
 
         private static void ExecuteFfmpegCommand(string command)
         {
-            var process = new Process
+            using (var process = new Process())
             {
-                StartInfo = new ProcessStartInfo
+                process.StartInfo = new ProcessStartInfo
                 {
                     FileName = FFMPEG_PATH,
                     Arguments = command,
@@ -36,15 +36,22 @@ namespace SteamClip
                     RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true,
-                }
-            };
-            process.Start();
-            var error = process.StandardError.ReadToEnd();
-            process.WaitForExit();
+                };
 
-            if (process.ExitCode != 0)
-            {
-                throw new Exception($"ffmpeg exited with code {process.ExitCode}: {error}");
+                var errorBuilder = new StringBuilder();
+                process.ErrorDataReceived += (sender, e) => { if (e.Data != null) errorBuilder.AppendLine(e.Data); };
+
+                process.Start();
+
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+
+                process.WaitForExit();
+
+                if (process.ExitCode != 0)
+                {
+                    throw new Exception($"ffmpeg exited with code {process.ExitCode}: {errorBuilder.ToString()}");
+                }
             }
         }
     }
