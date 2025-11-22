@@ -10,7 +10,7 @@ using System.Windows.Forms;
 using System.IO;
 using System.Net.Http;
 using System.Diagnostics;
-using System.Web.Script.Serialization;
+using System.Text.Json;
 
 namespace SteamClip
 {
@@ -117,15 +117,13 @@ namespace SteamClip
             if (File.Exists(GAME_IDS_FILE))
             {
                 var json = File.ReadAllText(GAME_IDS_FILE);
-                var serializer = new JavaScriptSerializer();
-                game_ids = serializer.Deserialize<Dictionary<string, string>>(json);
+                game_ids = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
             }
         }
 
         private void SaveGameIDs()
         {
-            var serializer = new JavaScriptSerializer();
-            var json = serializer.Serialize(game_ids);
+            var json = JsonSerializer.Serialize(game_ids);
             File.WriteAllText(GAME_IDS_FILE, json);
         }
 
@@ -315,13 +313,16 @@ namespace SteamClip
                 return path;
             }
 
+            var fileNameWithoutExt = Path.GetFileNameWithoutExtension(filename);
+            var extension = Path.GetExtension(filename);
             var i = 1;
-            var new_path = Path.Combine(directory, $"{Path.GetFileNameWithoutExtension(filename)}_{i}{Path.GetExtension(filename)}");
-            while (File.Exists(new_path))
+            string new_path;
+            do
             {
+                new_path = Path.Combine(directory, $"{fileNameWithoutExt}_{i}{extension}");
                 i++;
-                new_path = Path.Combine(directory, $"{Path.GetFileNameWithoutExtension(filename)}_{i}{Path.GetExtension(filename)}");
-            }
+            } while (File.Exists(new_path));
+
             return new_path;
         }
 
@@ -389,8 +390,7 @@ namespace SteamClip
             try
             {
                 var response = await client.GetStringAsync(url);
-                var serializer = new JavaScriptSerializer();
-                var data = serializer.Deserialize<Dictionary<string, SteamAppDetails>>(response);
+                var data = JsonSerializer.Deserialize<Dictionary<string, SteamAppDetails>>(response);
                 if (data.ContainsKey(game_id) && data[game_id].success)
                 {
                     var name = data[game_id].data.name;
@@ -453,9 +453,31 @@ namespace SteamClip
                     }
                 }
 
+                Image backgroundImage = null;
+                if (File.Exists(thumbnail_path))
+                {
+                    try
+                    {
+                        using (var fs = new FileStream(thumbnail_path, FileMode.Open, FileAccess.Read))
+                        {
+                            using (var ms = new MemoryStream())
+                            {
+                                fs.CopyTo(ms);
+                                ms.Seek(0, SeekOrigin.Begin);
+                                backgroundImage = Image.FromStream(ms);
+                            }
+                        }
+                    }
+                    catch (IOException)
+                    {
+                        // File might be locked, can be ignored for now.
+                        // The thumbnail will be loaded on the next refresh.
+                    }
+                }
+
                 var button = new Button
                 {
-                    BackgroundImage = File.Exists(thumbnail_path) ? Image.FromFile(thumbnail_path) : null,
+                    BackgroundImage = backgroundImage,
                     BackgroundImageLayout = ImageLayout.Stretch,
                     Dock = DockStyle.Fill,
                     Tag = folder

@@ -7,8 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Web.Script.Serialization;
 using System.IO;
+using System.Text.Json;
 
 namespace SteamClip
 {
@@ -35,6 +35,7 @@ namespace SteamClip
 
         private void save_changes(object sender, EventArgs e)
         {
+            game_id_grid.EndEdit();
             mainForm.game_ids = (Dictionary<string, string>)((BindingSource)game_id_grid.DataSource).DataSource;
             mainForm.SaveGameIDs();
             mainForm.populate_gameid_combo();
