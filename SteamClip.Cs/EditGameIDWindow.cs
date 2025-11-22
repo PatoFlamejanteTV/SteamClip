@@ -35,6 +35,7 @@ namespace SteamClip
 
         private void save_changes(object sender, EventArgs e)
         {
+            game_id_grid.EndEdit();
             mainForm.game_ids = (Dictionary<string, string>)((BindingSource)game_id_grid.DataSource).DataSource;
             mainForm.SaveGameIDs();
             mainForm.populate_gameid_combo();
