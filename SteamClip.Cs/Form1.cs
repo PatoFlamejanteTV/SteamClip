@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
@@ -30,10 +31,12 @@ namespace SteamClip
         private Dictionary<string, string> _custom_record_cache = new Dictionary<string, string>();
         private string default_dir;
         public string export_dir;
+        public string ffmpeg_path;
         private string prev_steamid;
         private string prev_media_type;
 
         private HashSet<string> selected_clips = new HashSet<string>();
+        private CancellationTokenSource _cts;
 
         public Form1()
         {
@@ -70,6 +73,7 @@ namespace SteamClip
             prev_button.Click += show_previous_clips;
             next_button.Click += show_next_clips;
             convert_button.Click += convert_clip;
+            cancel_button.Click += cancel_conversion;
             exit_button.Click += (sender, e) => Close();
 
             populate_steamid_dirs();
@@ -97,6 +101,11 @@ namespace SteamClip
                         {
                             export_dir = value;
                         }
+                        else if (key == "ffmpeg_path")
+                        {
+                            ffmpeg_path = value;
+                            FfmpegWrapper.SetFfmpegPath(ffmpeg_path);
+                        }
                     }
                 }
             }
@@ -107,7 +116,8 @@ namespace SteamClip
             var lines = new List<string>
             {
                 $"userdata_path={default_dir}",
-                $"export_path={export_dir}"
+                $"export_path={export_dir}",
+                $"ffmpeg_path={ffmpeg_path}"
             };
             File.WriteAllLines(CONFIG_FILE, lines);
         }
@@ -249,6 +259,11 @@ namespace SteamClip
             process_clips(selected_clips.ToList());
         }
 
+        private void cancel_conversion(object sender, EventArgs e)
+        {
+            _cts?.Cancel();
+        }
+
         private void process_clips(List<string> clip_list)
         {
             if (clip_list.Count == 0)
@@ -260,6 +275,10 @@ namespace SteamClip
             progress_bar.Visible = true;
             progress_bar.Value = 0;
             progress_bar.Maximum = clip_list.Count;
+            cancel_button.Visible = true;
+
+            _cts = new CancellationTokenSource();
+            var token = _cts.Token;
 
             Task.Run(async () =>
             {
@@ -267,6 +286,7 @@ namespace SteamClip
                 {
                     for (int i = 0; i < clip_list.Count; i++)
                     {
+                        token.ThrowIfCancellationRequested();
                         var folder = clip_list[i];
                         var video_path = Directory.GetFiles(folder, "*-stream0-*.m4s").FirstOrDefault();
                         var audio_path = Directory.GetFiles(folder, "*-stream1-*.m4s").FirstOrDefault();
@@ -282,7 +302,7 @@ namespace SteamClip
                         var game_name = await get_game_name(folder.Split('_')[1]);
                         var output_filename = get_unique_filename(export_dir, $"{game_name}_{extract_datetime_from_folder_name(folder):yyyy-MM-dd_HH-mm-ss}.mp4");
 
-                        FfmpegWrapper.ConvertToMp4(video_path, audio_path, output_filename);
+                        FfmpegWrapper.ConvertToMp4(video_path, audio_path, output_filename, token);
 
                         this.Invoke((MethodInvoker)delegate {
                             progress_bar.Value = i + 1;
@@ -291,18 +311,28 @@ namespace SteamClip
 
                     this.Invoke((MethodInvoker)delegate {
                         progress_bar.Visible = false;
+                        cancel_button.Visible = false;
                         MessageBox.Show("Conversion complete!", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    });
+                }
+                catch (OperationCanceledException)
+                {
+                    this.Invoke((MethodInvoker)delegate {
+                        progress_bar.Visible = false;
+                        cancel_button.Visible = false;
+                        MessageBox.Show("Conversion cancelled.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     });
                 }
                 catch (Exception ex)
                 {
                     this.Invoke((MethodInvoker)delegate {
                         progress_bar.Visible = false;
+                        cancel_button.Visible = false;
                         Logger.Error("An error occurred during conversion.", ex);
                         MessageBox.Show("An error occurred during conversion. See logs for more details.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     });
                 }
-            });
+            }, token);
         }
 
         private string get_unique_filename(string directory, string filename)
@@ -554,7 +584,9 @@ namespace SteamClip
         public void delete_config_folder()
         {
             var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            if (!CONFIG_DIR.StartsWith(localAppData))
+            var localAppDataFullPath = Path.GetFullPath(localAppData);
+            var configDirFullPath = Path.GetFullPath(CONFIG_DIR);
+            if (!configDirFullPath.StartsWith(localAppDataFullPath + Path.DirectorySeparatorChar))
             {
                 Logger.Error($"Attempted to delete a directory outside of LocalApplicationData: {CONFIG_DIR}");
                 MessageBox.Show("Invalid configuration directory path. See logs for details.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);

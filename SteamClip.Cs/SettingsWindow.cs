@@ -27,22 +27,29 @@ namespace SteamClip
             update_game_ids_button.Click += update_game_ids;
             check_for_updates_button.Click += check_for_updates;
             delete_config_button.Click += delete_config_folder;
+            select_ffmpeg_button.Click += select_ffmpeg_path;
             close_settings_button.Click += (sender, e) => Close();
+
+            ffmpeg_path_box.Text = mainForm.ffmpeg_path;
         }
 
         private void open_config_folder(object sender, EventArgs e)
         {
             if (Directory.Exists(mainForm.CONFIG_DIR))
             {
-                if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+                try
                 {
-                    Process.Start("explorer.exe", mainForm.CONFIG_DIR);
+                    Process.Start(new ProcessStartInfo()
+                    {
+                        FileName = mainForm.CONFIG_DIR,
+                        UseShellExecute = true,
+                        Verb = "open"
+                    });
                 }
-                else
+                catch (Exception ex)
                 {
-                    // For non-Windows platforms, a simple Process.Start is the most portable option.
-                    // Additional security could be added here for specific platforms if needed.
-                    Process.Start(mainForm.CONFIG_DIR);
+                    Logger.Error($"Failed to open config folder: {mainForm.CONFIG_DIR}", ex);
+                    MessageBox.Show("Could not open the configuration folder.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             else
@@ -84,6 +91,21 @@ namespace SteamClip
         private void delete_config_folder(object sender, EventArgs e)
         {
             mainForm.delete_config_folder();
+        }
+
+        private void select_ffmpeg_path(object sender, EventArgs e)
+        {
+            using (var dialog = new OpenFileDialog())
+            {
+                dialog.Filter = "ffmpeg.exe|ffmpeg.exe";
+                if (dialog.ShowDialog() == DialogResult.OK)
+                {
+                    mainForm.ffmpeg_path = dialog.FileName;
+                    mainForm.SaveConfig();
+                    ffmpeg_path_box.Text = mainForm.ffmpeg_path;
+                    FfmpegWrapper.SetFfmpegPath(mainForm.ffmpeg_path);
+                }
+            }
         }
     }
 }

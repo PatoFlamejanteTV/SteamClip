@@ -42,6 +42,7 @@ namespace SteamClip
             this.exit_button = new System.Windows.Forms.Button();
             this.top_layout = new System.Windows.Forms.FlowLayoutPanel();
             this.bottom_layout = new System.Windows.Forms.FlowLayoutPanel();
+            this.cancel_button = new System.Windows.Forms.Button();
             this.SuspendLayout();
             //
             // steamid_combo
@@ -169,6 +170,7 @@ namespace SteamClip
             this.bottom_layout.Controls.Add(this.prev_button);
             this.bottom_layout.Controls.Add(this.next_button);
             this.bottom_layout.Controls.Add(this.convert_button);
+            this.bottom_layout.Controls.Add(this.cancel_button);
             this.bottom_layout.Controls.Add(this.exit_button);
             this.bottom_layout.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.bottom_layout.Location = new System.Drawing.Point(0, 515);
@@ -209,5 +211,6 @@ namespace SteamClip
         private System.Windows.Forms.Button exit_button;
         private System.Windows.Forms.FlowLayoutPanel top_layout;
         private System.Windows.Forms.FlowLayoutPanel bottom_layout;
+        private System.Windows.Forms.Button cancel_button;
     }
 }

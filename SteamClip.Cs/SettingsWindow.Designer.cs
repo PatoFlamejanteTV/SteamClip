@@ -36,6 +36,8 @@ namespace SteamClip
             this.select_export_button = new System.Windows.Forms.Button();
             this.delete_config_button = new System.Windows.Forms.Button();
             this.version_label = new System.Windows.Forms.Label();
+            this.ffmpeg_path_box = new System.Windows.Forms.TextBox();
+            this.select_ffmpeg_button = new System.Windows.Forms.Button();
             this.SuspendLayout();
             //
             // open_config_button
@@ -104,17 +106,35 @@ namespace SteamClip
             // version_label
             //
             this.version_label.AutoSize = true;
-            this.version_label.Location = new System.Drawing.Point(12, 370);
+            this.version_label.Location = new System.Drawing.Point(12, 420);
             this.version_label.Name = "version_label";
             this.version_label.Size = new System.Drawing.Size(42, 13);
             this.version_label.TabIndex = 7;
             this.version_label.Text = "Version";
             //
+            // ffmpeg_path_box
+            //
+            this.ffmpeg_path_box.Location = new System.Drawing.Point(12, 370);
+            this.ffmpeg_path_box.Name = "ffmpeg_path_box";
+            this.ffmpeg_path_box.Size = new System.Drawing.Size(200, 20);
+            this.ffmpeg_path_box.TabIndex = 8;
+            //
+            // select_ffmpeg_button
+            //
+            this.select_ffmpeg_button.Location = new System.Drawing.Point(12, 396);
+            this.select_ffmpeg_button.Name = "select_ffmpeg_button";
+            this.select_ffmpeg_button.Size = new System.Drawing.Size(200, 23);
+            this.select_ffmpeg_button.TabIndex = 9;
+            this.select_ffmpeg_button.Text = "Set FFmpeg Path";
+            this.select_ffmpeg_button.UseVisualStyleBackColor = true;
+            //
             // SettingsWindow
             //
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(224, 401);
+            this.ClientSize = new System.Drawing.Size(224, 450);
+            this.Controls.Add(this.select_ffmpeg_button);
+            this.Controls.Add(this.ffmpeg_path_box);
             this.Controls.Add(this.version_label);
             this.Controls.Add(this.delete_config_button);
             this.Controls.Add(this.select_export_button);
@@ -140,5 +160,7 @@ namespace SteamClip
         private System.Windows.Forms.Button select_export_button;
         private System.Windows.Forms.Button delete_config_button;
         private System.Windows.Forms.Label version_label;
+        private System.Windows.Forms.TextBox ffmpeg_path_box;
+        private System.Windows.Forms.Button select_ffmpeg_button;
     }
 }
